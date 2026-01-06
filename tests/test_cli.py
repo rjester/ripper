@@ -5,7 +5,7 @@ import sys
 def test_greet_cli():
     p = subprocess.run([
         sys.executable,
-        'src/cli.py',
+        '-m', 'ripper.cli',
         'greet',
         '--name',
         'CI',

@@ -9,8 +9,6 @@ dependencies = [
 ]
 
 [project.scripts]
-# Installable console script that launches the CLI. After installing the package,
-# users can run `ripper` to invoke the command.
 # Use a `main` wrapper entrypoint to allow clearer startup logic.
 ripper = "ripper.cli:main"
 
