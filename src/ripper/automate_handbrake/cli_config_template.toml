@@ -1,0 +1,5 @@
+MakeMKVPath = "C:\\Program Files (x86)\\MakeMKV\\makemkvcon.exe"
+HandBrakePath = "C:\\Program Files\\HandBrake\\HandBrakeCLI.exe"
+PresetFile = "C:\\Users\\<you>\\AppData\\Roaming\\HandBrake\\presets.json"
+DefaultOutputPath = "./output"
+DefaultTempPath = "./temp"

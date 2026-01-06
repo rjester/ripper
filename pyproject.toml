@@ -6,7 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "typer>=0.21.0",
+    "rich>=12.0",
+    "tomli>=2.0",
+    "tomli-w>=0.6",
 ]
+
+[project.optional-dependencies]
+test = ["pytest"]
 
 [project.scripts]
 # Use a `main` wrapper entrypoint to allow clearer startup logic.
