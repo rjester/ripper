@@ -12,3 +12,5 @@ dependencies = [
 # Installable console script that launches the CLI. After installing the package,
 # users can run `ripper` to invoke the command.
 ripper = "src.cli:cli"
+# Use a `main` wrapper entrypoint to allow clearer startup logic.
+ripper = "src.cli:main"
