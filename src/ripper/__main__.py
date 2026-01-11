@@ -1,5 +1,4 @@
-from .main import print_hi
+from .cli import main
 
 if __name__ == "__main__":
-    print_hi('PyCharm')
-
+    main()
