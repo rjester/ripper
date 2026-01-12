@@ -78,9 +78,11 @@ def main(argv=None):
     elif args.command == "version":
         print(VERSION)
     elif args.command == "decrypt":
-        print("decrypt")
+        from .commands import cmd_decrypt
+        cmd_decrypt(args)
     elif args.command == "convert":
-        print("convert")
+        from .commands import cmd_convert
+        cmd_convert(args)
     elif args.command == "run":
         from .commands import cmd_run
         cmd_run(args)
