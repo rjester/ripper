@@ -9,7 +9,7 @@ Usage:
 """
 
 import argparse
-from . import __version__, print_hi
+from ._version import (VERSION)
 
 
 def main(argv=None):
@@ -72,12 +72,10 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
-    if args.command == "greet":
-        print_hi(args.name)
-    elif args.command == "init":
+    if args.command == "init":
         print("init")
     elif args.command == "version":
-        print(__version__)
+        print(VERSION)
     elif args.command == "decrypt":
         print("decrypt")
     elif args.command == "convert":

@@ -1,4 +1,4 @@
-from .cli import main
+from ripper.cli import main
 
 if __name__ == "__main__":
     main()

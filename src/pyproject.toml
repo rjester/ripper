@@ -1,6 +1,13 @@
 [project]
 name = "ripper"
 version = "0.1.0"
-description = "Add your description here"
+description = "Rip DVDs from the command-line"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Russ Jester"}
+]
 dependencies = []
+
+[project.scripts]
+ripper = "ripper.cli:main"
