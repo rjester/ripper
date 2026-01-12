@@ -73,7 +73,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "init":
-        print("init")
+        from .commands import cmd_init
+        cmd_init(args)
     elif args.command == "version":
         print(VERSION)
     elif args.command == "decrypt":
@@ -81,7 +82,8 @@ def main(argv=None):
     elif args.command == "convert":
         print("convert")
     elif args.command == "run":
-        print("run")
+        from .commands import cmd_run
+        cmd_run(args)
     else:
         parser.print_help()
 
