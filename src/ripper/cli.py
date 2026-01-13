@@ -12,6 +12,25 @@ import argparse
 from ._version import (VERSION)
 
 
+# Helper validators for MakeMKV-style special file names
+def _validate_special_file(val: str, allowed_specials: set):
+    if isinstance(val, str) and val.startswith("-") and val not in allowed_specials:
+        raise argparse.ArgumentTypeError(
+            f"Invalid special value {val!r}; allowed: {', '.join(sorted(allowed_specials))}"
+        )
+    return val
+
+
+def _messages_type(val: str):
+    allowed = {"-stdout", "-stderr", "-null"}
+    return _validate_special_file(val, allowed)
+
+
+def _progress_type(val: str):
+    allowed = {"-stdout", "-stderr", "-null", "-same"}
+    return _validate_special_file(val, allowed)
+
+
 def main(argv=None):
     """Entry point for the ripper CLI.
 
@@ -50,10 +69,269 @@ def main(argv=None):
     )
 
     # decrypt subcommand
-    subparsers.add_parser(
+    decrypt_parser = subparsers.add_parser(
         "decrypt",
         help="Decrypt videos",
-        description="Display the current version of ripper"
+        description="Decrypt (rip) discs or images using MakeMKV-like options"
+    )
+
+    # Device / input
+    decrypt_parser.add_argument(
+        "-d", "--device",
+        dest="device",
+        help="Optical device (e.g. /dev/sr0) or path to image/file to read from"
+    )
+
+    # Output
+    decrypt_parser.add_argument(
+        "-o", "--output",
+        dest="output",
+        default='.',
+        help="Output directory for decrypted files (default: current directory)"
+    )
+
+    # Title selection
+    decrypt_parser.add_argument(
+        "-t", "--title",
+        dest="title",
+        type=int,
+        help="Title number to decrypt (integer)"
+    )
+    decrypt_parser.add_argument(
+        "--titles",
+        dest="titles",
+        nargs='+',
+        type=int,
+        help="One or more title numbers to decrypt (space-separated)"
+    )
+
+    # Length / duration filters
+    # Length/duration flags (aliases for legacy names are registered later)
+
+    # Scanning / behavior: mutually exclusive --scan / --noscan
+    scan_group = decrypt_parser.add_mutually_exclusive_group()
+    scan_group.add_argument(
+        "--noscan",
+        dest="noscan",
+        action="store_true",
+        help="Do not scan the input device for available titles"
+    )
+    scan_group.add_argument(
+        "--scan",
+        dest="scan",
+        action="store_true",
+        help="Force a fresh scan of the input device"
+    )
+
+    # Chapters, audio, subtitles
+    decrypt_parser.add_argument(
+        "--chapters",
+        dest="chapters",
+        nargs='+',
+        help="Chapter ranges to extract (e.g., 1-3 or 5)"
+    )
+    decrypt_parser.add_argument(
+        "--audio",
+        dest="audio",
+        nargs='+',
+        help="Select audio tracks (indexes or language codes)"
+    )
+    decrypt_parser.add_argument(
+        "--subtitle", "--subtitles",
+        dest="subtitles",
+        nargs='+',
+        help="Select subtitle tracks (indexes or language codes)"
+    )
+    decrypt_parser.add_argument(
+        "--lang",
+        dest="lang",
+        help="Preferred audio language (e.g., en)"
+    )
+
+    # Cookies / network options
+    decrypt_parser.add_argument(
+        "--cookies",
+        dest="cookies",
+        help="Path to cookies file (useful for network sources)"
+    )
+
+    # MakeMKV general options (from usage.txt)
+    decrypt_parser.add_argument(
+        "--messages",
+        dest="messages",
+        type=_messages_type,
+        default='-stdout',
+        help=("Output all messages to file. Special values: -stdout, -stderr, -null. "
+              "Default: -stdout")
+    )
+    decrypt_parser.add_argument(
+        "--progress",
+        dest="progress",
+        type=_progress_type,
+        default=None,
+        help=("Output all progress messages to file. Special values: -stdout, -stderr, -null, -same. "
+              "Use -same to use the same file as --messages. Default: no output")
+    )
+    decrypt_parser.add_argument(
+        "--debug",
+        dest="debug",
+        nargs='?',
+        help=("Enable debug messages and optionally provide a debug file. "
+              "If not provided, program preferences are used.")
+    )
+
+    # directio: mutually exclusive boolean flags --directio / --no-directio
+    directio_group = decrypt_parser.add_mutually_exclusive_group()
+    directio_group.add_argument(
+        "--directio",
+        dest="directio",
+        action="store_true",
+        default=None,
+        help="Enable direct disc access (overrides program preferences)"
+    )
+    directio_group.add_argument(
+        "--no-directio",
+        dest="directio",
+        action="store_false",
+        help="Disable direct disc access (overrides program preferences)"
+    )
+
+    decrypt_parser.add_argument(
+        "--cache",
+        dest="cache",
+        type=int,
+        help=("Size of read cache in megabytes used by MakeMKV. "
+              "Recommended: 128 for streaming, 512 for DVD, 1024 for Blu-ray.")
+    )
+
+    # Streaming options
+    # upnp: mutually exclusive boolean flags --upnp / --no-upnp
+    upnp_group = decrypt_parser.add_mutually_exclusive_group()
+    upnp_group.add_argument(
+        "--upnp",
+        dest="upnp",
+        action="store_true",
+        default=None,
+        help="Enable UPNP streaming (overrides program preferences)"
+    )
+    upnp_group.add_argument(
+        "--no-upnp",
+        dest="upnp",
+        action="store_false",
+        help="Disable UPNP streaming (overrides program preferences)"
+    )
+    decrypt_parser.add_argument(
+        "--bindip",
+        dest="bindip",
+        help="IP address to bind the streaming/web server"
+    )
+    decrypt_parser.add_argument(
+        "--bindport",
+        dest="bindport",
+        type=int,
+        default=51000,
+        help="Port number to bind the web server (default: 51000)"
+    )
+
+    # Backup / conversion options
+    decrypt_parser.add_argument(
+        "--decrypt",
+        dest="decrypt_streams",
+        action="store_true",
+        help="Decrypt stream files during backup"
+    )
+    # Support both --min-length and legacy --minlength (normalize to min_length)
+    decrypt_parser.add_argument(
+        "--minlength",
+        "--min-length",
+        dest="min_length",
+        type=int,
+        help="Minimum title length in seconds (alias: --min-length)"
+    )
+    # Provide an alias for max-length
+    decrypt_parser.add_argument(
+        "--maxlength",
+        "--max-length",
+        dest="max_length",
+        type=int,
+        help="Maximum title length in seconds (alias: --max-length)"
+    )
+    # Provide aliases for duration flags
+    decrypt_parser.add_argument(
+        "--minduration",
+        "--min-duration",
+        dest="min_duration",
+        type=int,
+        help="Minimum duration in seconds (alias: --min-duration)"
+    )
+    decrypt_parser.add_argument(
+        "--maxduration",
+        "--max-duration",
+        dest="max_duration",
+        type=int,
+        help="Maximum duration in seconds (alias: --max-duration)"
+    )
+
+    # Automation options
+    decrypt_parser.add_argument(
+        "-r", "--robot",
+        dest="robot",
+        action="store_true",
+        help=("Enables automation (robot) mode. Outputs line-based, quoted, escaped strings. "
+              "Recommended for scripting/automation.")
+    )
+
+    # Advanced output / control
+    decrypt_parser.add_argument(
+        "--decrypt-to",
+        dest="decrypt_to",
+        help="Explicit path or device to write decrypted output to"
+    )
+    decrypt_parser.add_argument(
+        "--force",
+        dest="force",
+        action="store_true",
+        help="Overwrite existing output files"
+    )
+    decrypt_parser.add_argument(
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        help="Show actions without performing them"
+    )
+
+    # Logging / performance
+    decrypt_parser.add_argument(
+        "--verbose", "-v",
+        dest="verbose",
+        action="count",
+        default=0,
+        help="Increase verbosity (-v, -vv)"
+    )
+    decrypt_parser.add_argument(
+        "--threads",
+        dest="threads",
+        type=int,
+        default=1,
+        help="Number of worker threads to use for post-processing (default: 1)"
+    )
+    decrypt_parser.add_argument(
+        "--no-subtitles",
+        dest="no_subtitles",
+        action="store_true",
+        help="Do not extract subtitles"
+    )
+    decrypt_parser.add_argument(
+        "--no-audio",
+        dest="no_audio",
+        action="store_true",
+        help="Do not extract audio tracks"
+    )
+    decrypt_parser.add_argument(
+        "--scan-timeout",
+        dest="scan_timeout",
+        type=int,
+        help="Timeout in seconds for scanning operations"
     )
 
     # convert subcommand
