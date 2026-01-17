@@ -348,7 +348,21 @@ def main(argv=None):
         description="Display the current version of ripper"
     )
 
+    # makemkv convenience wrapper subcommand - forward remaining args
+    makemkv_parser = subparsers.add_parser(
+        "makemkv",
+        help="Run makemkvcon via the bundled MakeMKVClient wrapper",
+        description="Convenience wrapper around makemkvcon64.exe"
+    )
+    makemkv_parser.add_argument("args", nargs=argparse.REMAINDER, help="Arguments forwarded to makemkv wrapper")
+
     args = parser.parse_args(argv)
+
+    if args.command == "greet":
+        # simple greeting handler
+        name = getattr(args, "name", "PyCharm")
+        print(f"Hello, {name}!")
+        return
 
     if args.command == "init":
         from .commands import cmd_init
@@ -358,6 +372,16 @@ def main(argv=None):
     elif args.command == "decrypt":
         from .commands import cmd_decrypt
         cmd_decrypt(args)
+    elif args.command == "makemkv":
+        # forward remaining argv to the makemkv command module
+        from .commands import makemkv as _makemkv
+        # args.args is the list after the subcommand; pass as argv to makemkv.main
+        ret = _makemkv.main(args.args if getattr(args, 'args', None) else None)
+        # if makemkv.main returned an exit code, propagate it
+        if isinstance(ret, int) and ret != 0:
+            import sys
+
+            sys.exit(ret)
     elif args.command == "convert":
         from .commands import cmd_convert
         cmd_convert(args)
